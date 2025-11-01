@@ -62,6 +62,7 @@ def handle_button(pin):
 
     # White Noise
     if label == "X":
+        STATE = 'PLAY'
         if curr_playlist != WHITE_NOISE: 
             load_start_playlist(WHITE_NOISE)
             print('switch to white noise')
@@ -70,10 +71,11 @@ def handle_button(pin):
             print('next white noise')
 
     if label == "Y":
-        print("Y RemoteControl: VolumeUp")
+        pass
 
     # Classic Music
     if label == "A":
+        STATE = 'PLAY'
         if curr_playlist != CLASSIC:
             load_start_playlist(CLASSIC)
             print('switch to classic')
