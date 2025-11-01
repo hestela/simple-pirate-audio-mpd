@@ -11,6 +11,7 @@ LABELS = ["A", "B", "X", "Y"]
 # Some simple m3u playlists
 WHITE_NOISE = 'white_noise'
 CLASSIC = 'classic'
+STATE = 'PLAY'
 
 client = MPDClient()
 # Default playlist
@@ -54,6 +55,7 @@ def try_next():
 
 
 def handle_button(pin):
+    global STATE
     test_mpd_con()
 
     label = LABELS[BUTTONS.index(pin)]
@@ -79,11 +81,20 @@ def handle_button(pin):
             try_next()
             print('next classic')
 
+    # Pause
     if label == "B":
-        print("B RemoteControl: VolumeDown")
+        if STATE == 'PLAY':
+            STATE = 'PAUSE'
+            print("PAUSE")
+            client.pause()
+        else:
+            STATE = 'PLAY'
+            print("PLAY")
+            client.play()
 
     # Check if playlist got emptied
-    check_playlist()
+    if STATE == 'PLAY':
+        check_playlist()
 
 
 GPIO.setmode(GPIO.BCM)

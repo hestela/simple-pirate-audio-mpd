@@ -9,6 +9,7 @@ fi
 
 bt_conn_dev=$(bluetoothctl devices Connected)
 if [ -z "$bt_conn_dev" ]; then
+	# TODO add a retry
 	bluetoothctl connect "$addr"
 fi
 
