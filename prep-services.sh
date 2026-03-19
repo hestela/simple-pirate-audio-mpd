@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+/home/dietpi/venv/bin/python /home/dietpi/audio-app/power-off-screen.py
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source "$SCRIPT_DIR/bt-addr"
 if [ -z "$addr" ]; then
