@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import os
 import signal
+import time
 import RPi.GPIO as GPIO
 from mpd import MPDClient
 
@@ -17,12 +17,30 @@ client = MPDClient()
 # Default playlist
 curr_playlist = CLASSIC
 
-def test_mpd_con():
+def ensure_mpd_con(retries=5, delay=0.5):
+    for attempt in range(retries):
+        try:
+            client.ping()
+            return True
+        except Exception:
+            try:
+                client.connect("localhost", 6600)
+                return True
+            except Exception:
+                if attempt < retries - 1:
+                    time.sleep(delay)
+    print(f"ERROR: could not connect to MPD after {retries} attempts")
+    return False
+
+
+def sync_state_from_mpd():
+    """Re-sync STATE with MPD's actual playback state after a reconnect."""
+    global STATE
     try:
-        client.ping()
-    # Cheap way to refresh connection
-    except Exception as e:
-        client.connect("localhost", 6600)
+        status = client.status()
+        STATE = "PLAY" if status.get("state") == "play" else "PAUSE"
+    except Exception:
+        pass
 
 
 def check_playlist():
@@ -58,7 +76,12 @@ def try_next():
 
 def handle_button(pin):
     global STATE
-    test_mpd_con()
+    was_connected = ensure_mpd_con()
+    if not was_connected:
+        return
+
+    # Re-sync state in case MPD's state drifted while disconnected
+    sync_state_from_mpd()
 
     label = LABELS[BUTTONS.index(pin)]
 
@@ -87,14 +110,17 @@ def handle_button(pin):
 
     # Pause
     if label == "B" or label == "Y":
-        if STATE == "PLAY":
-            STATE = "PAUSE"
-            print("PAUSE")
-            client.pause()
-        else:
-            STATE = "PLAY"
-            print("PLAY")
-            client.play()
+        try:
+            if STATE == "PLAY":
+                STATE = "PAUSE"
+                print("PAUSE")
+                client.pause()
+            else:
+                STATE = "PLAY"
+                print("PLAY")
+                client.play()
+        except Exception as e:
+            print(f"pause/play failed: {e}")
 
     # Check if playlist got emptied
     if STATE == "PLAY":
@@ -108,7 +134,7 @@ for pin in BUTTONS:
     GPIO.add_event_detect(pin, GPIO.FALLING, handle_button, bouncetime=250)
 
 # MPD init and hard reset
-test_mpd_con()
+ensure_mpd_con()
 client.random(1)
 # Repeat makes playlist repeat. Should help avoid having to poll for an empty queue
 client.repeat(1)
